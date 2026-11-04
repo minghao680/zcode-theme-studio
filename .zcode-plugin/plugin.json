@@ -1,0 +1,153 @@
+{
+  "name": "zcode-theme-studio",
+  "version": "1.5.1",
+  "description": "Deep UI personalization for ZCode: theme presets, live token overrides, palette extraction, playlist rotation and Wallpaper Engine / arbitrary local wallpapers (video/web/image) injected via local CDP. Launch ZCode with --remote-debugging-port to enable.",
+  "description_i18n": {
+    "en": "Deep UI personalization for ZCode: theme presets, live token overrides, wallpaper palette extraction, playlist rotation and Wallpaper Engine / arbitrary local wallpapers (video/web/image, scene shows static preview) injected over local CDP. Requires ZCode launched with --remote-debugging-port (use shortcut_install once).",
+    "zh-CN": "ZCode 深度个性化：主题预设、实时令牌调色、壁纸取色配色、播放列表轮换、Wallpaper Engine 及任意本地媒体壁纸（视频/网页/图片可播放，scene 型显示预览图），通过本地 CDP 注入。需用生成的『ZCode (主题版)』快捷方式启动（工具 shortcut_install 一键创建）。"
+  },
+  "author": { "name": "local-dev" },
+  "license": "MIT",
+  "skills": "skills",
+  "commands": "commands",
+  "mcpServers": {
+    "zcode-theme-studio": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/server.mjs"],
+      "cwd": "${ZCODE_PROJECT_DIR}",
+      "env": {
+        "ZCODE_PLUGIN_DATA": "${ZCODE_PLUGIN_DATA}",
+        "THEME_STUDIO_DEBUG_PORT": "${user_config.debug_port}",
+        "THEME_STUDIO_WORKSHOP_DIR": "${user_config.workshop_dir}",
+        "THEME_STUDIO_PROJECTS_DIR": "${user_config.projects_dir}",
+        "THEME_STUDIO_STEAM_ROOTS": "${user_config.steam_roots}",
+        "THEME_STUDIO_ENABLED": "${user_config.enabled}",
+        "THEME_STUDIO_PRESET": "${user_config.preset}",
+        "THEME_STUDIO_WALLPAPER_ID": "${user_config.wallpaper_id}",
+        "THEME_STUDIO_DIM": "${user_config.dim}",
+        "THEME_STUDIO_BLUR": "${user_config.blur}",
+        "THEME_STUDIO_FIT": "${user_config.fit}",
+        "THEME_STUDIO_SURFACE_OPACITY": "${user_config.surface_opacity}",
+        "THEME_STUDIO_SIDEBAR_OPACITY": "${user_config.sidebar_opacity}",
+        "THEME_STUDIO_BUBBLE_OPACITY": "${user_config.bubble_opacity}",
+        "THEME_STUDIO_GLASS_ENABLED": "${user_config.glass_enabled}",
+        "THEME_STUDIO_GLASS_STYLE": "${user_config.glass_style}",
+        "THEME_STUDIO_GLASS_BLUR": "${user_config.glass_blur}",
+        "THEME_STUDIO_ROTATION_ENABLED": "${user_config.rotation_enabled}",
+        "THEME_STUDIO_ROTATION_INTERVAL": "${user_config.rotation_interval}"
+      }
+    }
+  },
+  "hooks": "hooks",
+  "userConfig": {
+    "debug_port": {
+      "type": "number",
+      "default": 9333,
+      "title": "① 连接 · 调试端口",
+      "description": "主题版快捷方式使用的 CDP 端口（--remote-debugging-port）。修改后需重新生成快捷方式。"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "title": "① 连接 · 总开关",
+      "description": "关闭后 watcher 会完整拆除注入层（壁纸/主题/玻璃全部还原）。"
+    },
+    "workshop_dir": {
+      "type": "directory",
+      "default": "",
+      "title": "② 壁纸 · WE 工坊目录",
+      "description": "Wallpaper Engine 创意工坊内容目录（如 D:\\steam\\steamapps\\workshop\\content\\431960）。留空自动探测所有 Steam 库。"
+    },
+    "projects_dir": {
+      "type": "directory",
+      "default": "",
+      "title": "② 壁纸 · 本地项目目录",
+      "description": "WE 本地项目目录（myprojects）。留空自动探测。"
+    },
+    "steam_roots": {
+      "type": "string",
+      "default": "",
+      "title": "② 壁纸 · Steam 库根目录",
+      "description": "分号分隔的多个 Steam 库根目录。留空使用默认安装位置 + libraryfolders.vdf。"
+    },
+    "wallpaper_id": {
+      "type": "string",
+      "default": "",
+      "title": "② 壁纸 · 默认壁纸 ID",
+      "description": "会话启动时使用的壁纸（wallpaper_list 中的 id）。留空保持上次选择。修改在下次会话生效。"
+    },
+    "fit": {
+      "type": "string",
+      "default": "cover",
+      "title": "② 壁纸 · 适配模式",
+      "description": "cover 铺满裁切 / contain 完整显示（含模糊填充）。"
+    },
+    "dim": {
+      "type": "number",
+      "default": 22,
+      "title": "② 壁纸 · 背景压暗 %",
+      "description": "0-50。深色预设用黑色压暗层，浅色预设自动改用白色磨砂层。"
+    },
+    "blur": {
+      "type": "number",
+      "default": 0,
+      "title": "② 壁纸 · 背景模糊 px",
+      "description": "0-24，整层壁纸模糊（比面板玻璃更强的可读性手段）。"
+    },
+    "preset": {
+      "type": "string",
+      "default": "starsea-blue",
+      "title": "③ 主题 · 预设",
+      "description": "carbon-code / cyber-neon / aurora / paper-reading / sakura-pink / forest / amber-warm / starsea-blue。修改在下次会话生效。"
+    },
+    "surface_opacity": {
+      "type": "number",
+      "default": 88,
+      "title": "③ 主题 · 面板不透明度 %",
+      "description": "0-100，卡片/弹窗/输入框等表面的着色浓度。"
+    },
+    "sidebar_opacity": {
+      "type": "number",
+      "default": 76,
+      "title": "③ 主题 · 侧栏不透明度 %",
+      "description": "0-100。"
+    },
+    "bubble_opacity": {
+      "type": "number",
+      "default": 78,
+      "title": "③ 主题 · 消息气泡不透明度 %",
+      "description": "30-100，用户消息气泡在壁纸上的着色浓度，可读性关键参数。"
+    },
+    "glass_enabled": {
+      "type": "boolean",
+      "default": true,
+      "title": "④ 效果 · 玻璃开关",
+      "description": "侧栏/面板的玻璃拟态效果。"
+    },
+    "glass_style": {
+      "type": "string",
+      "default": "liquid",
+      "title": "④ 效果 · 玻璃风格",
+      "description": "liquid 液态玻璃（高饱和+高光+光泽）/ frosted 普通磨砂。"
+    },
+    "glass_blur": {
+      "type": "number",
+      "default": 16,
+      "title": "④ 效果 · 玻璃模糊 px",
+      "description": "0-40。"
+    },
+    "rotation_enabled": {
+      "type": "boolean",
+      "default": false,
+      "title": "⑤ 轮换 · 启用播放列表",
+      "description": "启用后 watcher 按间隔轮换壁纸（内存态，配置文件保留基础壁纸）。"
+    },
+    "rotation_interval": {
+      "type": "number",
+      "default": 600,
+      "title": "⑤ 轮换 · 间隔秒",
+      "description": "最小 30 秒。播放列表本身通过对话或配置文件 rotation.ids 管理。"
+    }
+  }
+}

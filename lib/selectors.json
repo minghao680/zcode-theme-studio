@@ -1,0 +1,14 @@
+{
+  "version": 3,
+  "note": "Structural selectors for the ZCode shell. Each candidate is feature-detected at apply time; missing ones are skipped silently. Update after ZCode upgrades if the shell DOM changes. NOTE: glass candidates must be full-width/real panels — shrink-wrapped absolute containers (like the top overlay strip) become floating glass blocks.",
+  "shellCandidates": [
+    "#root > div > div > div.flex.h-dvh.flex-col.overflow-hidden",
+    "#root .flex.h-dvh.flex-col.overflow-hidden",
+    "#root > div.relative.h-dvh"
+  ],
+  "glassCandidates": [
+    "#sidebar aside",
+    "#sidebar",
+    "aside.h-full.overflow-hidden"
+  ]
+}

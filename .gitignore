@@ -1,0 +1,15 @@
+# dev scratch / local artifacts (never commit)
+.dev/
+*.log
+*.zt-backup-*
+*.zt-tmp
+*.testbak
+*.orphaned-*
+node_modules/
+__pycache__/
+
+# local runtime data
+bridge.js
+config-snapshot.json
+config.json
+*.optin

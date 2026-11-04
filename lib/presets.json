@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "carbon-code",
+      "name": "Carbon Code",
+      "nameZh": "Carbon Code · 冷静代码风",
+      "dark": true,
+      "tokens": {
+        "--color-accent": "#2596be",
+        "--color-foreground": "#dfe6ec",
+        "--color-surface-tint": "#1a222a",
+        "--color-sidebar-tint": "#12181e",
+        "--color-border": "#ffffff26",
+        "--color-primary": "#dfe6ec"
+      }
+    },
+    {
+      "id": "cyber-neon",
+      "name": "Cyber Neon",
+      "nameZh": "赛博霓虹",
+      "dark": true,
+      "tokens": {
+        "--color-accent": "#ff2bd6",
+        "--color-foreground": "#efe9ff",
+        "--color-surface-tint": "#1b1024",
+        "--color-sidebar-tint": "#150c1e",
+        "--color-border": "#b96aff40",
+        "--color-primary": "#f2ecff"
+      }
+    },
+    {
+      "id": "aurora",
+      "name": "Aurora",
+      "nameZh": "Aurora · 极光",
+      "dark": true,
+      "tokens": {
+        "--color-accent": "#00e5a0",
+        "--color-foreground": "#dff5ec",
+        "--color-surface-tint": "#0f1f1a",
+        "--color-sidebar-tint": "#0b1713",
+        "--color-border": "#7cffcb2e",
+        "--color-primary": "#e8fff6"
+      }
+    },
+    {
+      "id": "paper-reading",
+      "name": "Paper Reading",
+      "nameZh": "纸白阅读",
+      "dark": false,
+      "tokens": {
+        "--color-accent": "#9a6a2f",
+        "--color-foreground": "#26221c",
+        "--color-surface-tint": "#f7f3ea",
+        "--color-sidebar-tint": "#efe9dc",
+        "--color-border": "#00000022",
+        "--color-primary": "#2e2820"
+      }
+    },
+    {
+      "id": "sakura-pink",
+      "name": "Sakura Pink",
+      "nameZh": "樱粉",
+      "dark": true,
+      "tokens": {
+        "--color-accent": "#ff7eb6",
+        "--color-foreground": "#fdeef5",
+        "--color-surface-tint": "#241421",
+        "--color-sidebar-tint": "#1d0f1b",
+        "--color-border": "#ff9ec833",
+        "--color-primary": "#fff0f7"
+      }
+    },
+    {
+      "id": "forest",
+      "name": "Forest",
+      "nameZh": "森林绿",
+      "dark": true,
+      "tokens": {
+        "--color-accent": "#4ade80",
+        "--color-foreground": "#e2f2e4",
+        "--color-surface-tint": "#122016",
+        "--color-sidebar-tint": "#0d1911",
+        "--color-border": "#86efac2b",
+        "--color-primary": "#eafff0"
+      }
+    },
+    {
+      "id": "amber-warm",
+      "name": "Amber Warm",
+      "nameZh": "琥珀暖阳",
+      "dark": true,
+      "tokens": {
+        "--color-accent": "#f59e0b",
+        "--color-foreground": "#f7eedd",
+        "--color-surface-tint": "#221a0e",
+        "--color-sidebar-tint": "#1b1408",
+        "--color-border": "#fbbf2430",
+        "--color-primary": "#fff8e8"
+      }
+    },
+    {
+      "id": "starsea-blue",
+      "name": "Star Sea",
+      "nameZh": "星海蓝",
+      "dark": true,
+      "tokens": {
+        "--color-accent": "#38bdf8",
+        "--color-foreground": "#e3f1fc",
+        "--color-surface-tint": "#0d1626",
+        "--color-sidebar-tint": "#0a111d",
+        "--color-border": "#7dd3fc2e",
+        "--color-primary": "#eff8ff"
+      }
+    }
+  ]
+}
