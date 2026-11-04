@@ -10,6 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const child = spawn(process.execPath, [join(here, 'startup-worker.mjs')], {
   detached: true,
   stdio: 'ignore',
+  windowsHide: true,
   cwd: dirname(here),
 });
 child.unref();

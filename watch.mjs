@@ -186,7 +186,7 @@ async function main() {
     const free = await acquireLock(p);
     if (!free) process.exit(0); // watcher already running
     lockSrv.close();
-    const child = spawn(process.execPath, [fileURLToPath(import.meta.url)], { detached: true, stdio: 'ignore' });
+    const child = spawn(process.execPath, [fileURLToPath(import.meta.url)], { detached: true, stdio: 'ignore', windowsHide: true });
     child.unref();
     log(`hook spawned watcher pid=${child.pid}`);
     process.exit(0);

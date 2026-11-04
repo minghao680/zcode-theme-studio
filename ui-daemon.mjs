@@ -22,7 +22,7 @@ function killOthers() {
   return new Promise(res => {
     try {
       const c = spawn('powershell.exe', ['-NoProfile', '-Command',
-        `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*ui-daemon*' -and $_.ProcessId -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`], { timeout: 20000 });
+        `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*ui-daemon*' -and $_.ProcessId -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`], { timeout: 20000, windowsHide: true });
       c.on('close', code => res(code));
       c.on('error', () => res(-1));
       setTimeout(() => res(-2), 22000); // hard cap

@@ -23,15 +23,17 @@ function appendLog(m) {
 const asar = process.env.THEME_STUDIO_ASAR_PATH || join(process.env.ProgramFiles || 'C:\\Program Files', 'ZCode', 'resources', 'app.asar');
 
 // ---- 1. ui-daemon (version-aware) ----
+function pidAlive(pid) { try { process.kill(pid, 0); return true; } catch { return false; } }
 function ensureUiDaemon() {
   const meta = join(dataDir, 'uidaemon.json');
   try {
     const rec = JSON.parse(readFileSync(meta, 'utf8'));
+    if (rec.pid && rec.version === VERSION && pidAlive(rec.pid)) { log("ui-daemon already running (skip respawn)"); return; }
     if (rec.pid && rec.version !== VERSION) {
       try { process.kill(rec.pid); log(`killed stale ui-daemon v${rec.version} pid=${rec.pid}`); } catch {}
     }
   } catch {}
-  const child = spawn(process.execPath, [join(pluginRoot, 'ui-daemon.mjs')], { detached: true, stdio: 'ignore' });
+  const child = spawn(process.execPath, [join(pluginRoot, 'ui-daemon.mjs')], { detached: true, stdio: 'ignore', windowsHide: true });
   child.unref();
   try { writeFileSync(meta, JSON.stringify({ pid: child.pid, version: VERSION, ts: Date.now() })); } catch {}
 }
@@ -41,11 +43,12 @@ function ensureWatcher() {
   const meta = join(dataDir, 'watcher.json');
   try {
     const rec = JSON.parse(readFileSync(meta, 'utf8'));
+    if (rec.pid && rec.version === VERSION && pidAlive(rec.pid)) { log("watcher already running (skip respawn)"); return; }
     if (rec.pid && rec.version !== VERSION) {
       try { process.kill(rec.pid); log(`killed stale watcher v${rec.version} pid=${rec.pid}`); } catch {}
     }
   } catch {}
-  const child = spawn(process.execPath, [join(pluginRoot, 'watch.mjs')], { detached: true, stdio: 'ignore' });
+  const child = spawn(process.execPath, [join(pluginRoot, 'watch.mjs')], { detached: true, stdio: 'ignore', windowsHide: true });
   child.unref();
   try { writeFileSync(meta, JSON.stringify({ pid: child.pid, version: VERSION, ts: Date.now() })); } catch {}
 }
@@ -83,7 +86,7 @@ function selfHeal() {
         const c = spawn('powershell.exe', [
           '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(pluginRoot, 'assets', 'asar-patch.ps1'),
           '-Asar', asar, '-PluginRoot', pluginRoot, '-BridgeUrl', bridgeUrl, '-BridgePath', bridgePath,
-        ], { timeout: 180000 });
+        ], { timeout: 180000, windowsHide: true });
         let out = '';
         c.stdout.on('data', d => { out += d; });
         c.stderr.on('data', d => { out += d; });

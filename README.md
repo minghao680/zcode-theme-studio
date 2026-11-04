@@ -74,9 +74,9 @@ asar 模式原理：一次性把一行 loader 注入 `app.asar/out/renderer/inde
 
 同步语义：server 启动时播种（首次）+ 变更检测覆盖（env 值 ≠ 上次记录值视为设置页修改）；空串默认值不参与；对话内 `theme_apply` 即时生效且在设置页未改动对应项时保持为最终值。
 
-## 启动开销（v1.6.0）
+## 启动开销与稳定性（v1.5.3/v1.6.0）
 
-SessionStart 钩子改为**后台调度器模式**：hook 在 ~500ms 内返回（此前同步执行 ~1s），watcher/UI 端点/asar 自愈全部转入后台 worker。daemon 与 watcher 带**版本感知锁**（watcher.json / uidaemon.json），版本升级后自动清理旧实例，避免旧代码僵尸长期占用端口。
+SessionStart 钩子改为**后台调度器模式**：hook 在 ~500ms 内返回（此前同步执行 ~1s），watcher/UI 端点/asar 自愈全部转入后台 worker。daemon 与 watcher 带**版本感知锁**（watcher.json / uidaemon.json），版本升级后自动清理旧实例。v1.5.3：启动瞬间 React 未挂载时透明化标记可能打在 splash 元素上——自愈定时器恢复为无条件重刷 applyShell（幂等），React 挂载后 3 秒内自动纠正；所有 spawn 加 windowsHide（不再弹 PS 窗口）；健康实例跳过重启（不再每次会话都杀/拉起）。
 
 ## 已知限制
 
