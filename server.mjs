@@ -74,7 +74,7 @@ function syncEnvSettings() {
   set('rotation_enabled', bool(env('THEME_STUDIO_ROTATION_ENABLED')), v => { cfg.rotation = { ...(cfg.rotation || {}), enabled: v }; });
   set('rotation_interval', num(env('THEME_STUDIO_ROTATION_INTERVAL')), v => { cfg.rotation = { ...(cfg.rotation || {}), intervalSec: Math.max(30, v) }; });
   set('dim', num(env('THEME_STUDIO_DIM')), v => { cfg.wallpaper = { ...(cfg.wallpaper || {}), dim: Math.max(0, Math.min(50, v)) }; });
-  set('blur', num(env('THEME_STUDIO_BLUR')), v => { cfg.wallpaper = { ...(cfg.wallpaper || {}), blur: Math.max(0, Math.min(24, v)) }; });
+  set('blur', num(env('THEME_STUDIO_BLUR')), v => { cfg.wallpaper = { ...(cfg.wallpaper || {}), blur: Math.max(0, Math.min(40, v)) }; });
   set('fit', env('THEME_STUDIO_FIT'), v => { if (v === 'cover' || v === 'contain') cfg.wallpaper = { ...(cfg.wallpaper || {}), fit: v }; });
   set('wallpaper_id', env('THEME_STUDIO_WALLPAPER_ID'), v => {
     try {
@@ -206,7 +206,7 @@ const TOOLS = [
         wallpaperPath: { type: 'string', description: 'Absolute path to ANY local media file (mp4/webm video, html page, jpg/png/gif/webp image) to use as wallpaper - not limited to Wallpaper Engine content.' },
         forcePreview: { type: 'boolean', description: 'For scene/application wallpapers: apply the static preview image (animated gif when available) instead of failing.' },
         dim: { type: 'number', description: 'Background dim overlay 0-50 (default 25; dark presets use black, light presets use a white frost).' },
-        blur: { type: 'number', description: 'Blur overlay px 0-24.' },
+        blur: { type: 'number', description: 'Wallpaper blur overlay px 0-40 (blurs the wallpaper behind the dim layer).' },
         fit: { type: 'string', enum: ['cover', 'contain'], description: 'Fit mode (default cover; contain uses blurred fill).' },
         surfaceOpacity: { type: 'number', description: 'Panel surface opacity 0-100 (default 88). Lower = more see-through panels.' },
         sidebarOpacity: { type: 'number', description: 'Sidebar surface opacity 0-100 (default 76).' },
@@ -262,7 +262,7 @@ const TOOLS = [
       } else {
         const wpUpdate = {};
         if (args.dim !== undefined) wpUpdate.dim = Math.max(0, Math.min(50, args.dim));
-        if (args.blur !== undefined) wpUpdate.blur = Math.max(0, Math.min(24, args.blur));
+        if (args.blur !== undefined) wpUpdate.blur = Math.max(0, Math.min(40, args.blur));
         if (args.fit !== undefined) wpUpdate.fit = args.fit;
         if (Object.keys(wpUpdate).length) applyWallpaper(cfg, wpUpdate);
       }
