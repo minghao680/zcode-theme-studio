@@ -257,7 +257,8 @@ const TOOLS = [
           }
           const media = hit.playable ? hit.mediaPath : hit.previewPath;
           if (!media) throw new Error('Wallpaper "' + hit.title + '" has no usable media or preview.');
-          applyWallpaper(cfg, { id: hit.id, type: hit.playable ? hit.type : 'image', mediaUrl: toFileUrl(media), fit: args.fit ?? cfg.wallpaper?.fit ?? 'cover', dim: args.dim ?? cfg.wallpaper?.dim ?? 25, blur: args.blur ?? cfg.wallpaper?.blur ?? 0 });
+          const fallbackFit = hit.playable ? 'cover' : 'contain'; // scene previews are square — contain shows the full composition
+          applyWallpaper(cfg, { id: hit.id, type: hit.playable ? hit.type : 'image', mediaUrl: toFileUrl(media), previewUrl: hit.previewPath ? toFileUrl(hit.previewPath) : null, fit: args.fit ?? (hit.previewFallback ? 'contain' : (cfg.wallpaper?.fit ?? 'cover')), dim: args.dim ?? cfg.wallpaper?.dim ?? 25, blur: args.blur ?? cfg.wallpaper?.blur ?? 0 });
         }
       } else {
         const wpUpdate = {};
