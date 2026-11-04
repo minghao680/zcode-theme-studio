@@ -74,6 +74,10 @@ asar 模式原理：一次性把一行 loader 注入 `app.asar/out/renderer/inde
 
 同步语义：server 启动时播种（首次）+ 变更检测覆盖（env 值 ≠ 上次记录值视为设置页修改）；空串默认值不参与；对话内 `theme_apply` 即时生效且在设置页未改动对应项时保持为最终值。
 
+## 启动开销（v1.6.0）
+
+SessionStart 钩子改为**后台调度器模式**：hook 在 ~500ms 内返回（此前同步执行 ~1s），watcher/UI 端点/asar 自愈全部转入后台 worker。daemon 与 watcher 带**版本感知锁**（watcher.json / uidaemon.json），版本升级后自动清理旧实例，避免旧代码僵尸长期占用端口。
+
 ## 已知限制
 
 - 必须用带调试端口的快捷方式启动 ZCode（CDP 仅绑定 127.0.0.1）

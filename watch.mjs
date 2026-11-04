@@ -10,7 +10,7 @@
 // Usage:
 //   node watch.mjs            # run in foreground (dev)
 //   node watch.mjs --hook     # spawn a detached watcher if none is running, then exit
-import { readFileSync, watchFile, appendFileSync } from 'node:fs';
+import { readFileSync, watchFile, appendFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import * as net from 'node:net';
@@ -65,6 +65,7 @@ function resolveWallpaper(id, base) {
 // ---------- rotation state (in-memory) ----------
 let rotState = null; // { idx, lastAt }
 
+const VERSION = '1.5.2';
 const TICK_MS = 3000;
 const conns = new Map(); // targetId -> { conn }
 let lastSrc = '';
@@ -163,6 +164,15 @@ function acquireLock(port) {
 
 async function main() {
   const hookMode = process.argv.includes('--hook');
+  // Kill any OTHER watch.mjs instance first (older versions never wrote watcher.json,
+  // so they would hold the lock forever and the current version could never start).
+  if (!hookMode || true) {
+    try {
+      const c = spawn('powershell.exe', ['-NoProfile', '-Command',
+        `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*watch.mjs*' -and $_.ProcessId -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`], { timeout: 20000 });
+      await new Promise(r => { c.on('close', r); c.on('error', r); setTimeout(r, 15000); });
+    } catch {}
+  }
   const { debugPort: port } = loadConfig() || {};
   const p = Number(port || 9333);
 
@@ -184,7 +194,8 @@ async function main() {
 
   const locked = await acquireLock(p);
   if (!locked) { console.log(JSON.stringify({ ok: false, reason: 'already-running' })); process.exit(0); }
-  log(`watcher started pid=${process.pid} port=${p}`);
+  try { writeFileSync(join(homedir(), '.zcode', 'zcode-theme-studio', 'watcher.json'), JSON.stringify({ pid: process.pid, version: VERSION, port: p, ts: Date.now() })); } catch {}
+  log(`watcher started pid=${process.pid} version=${VERSION} port=${p}`);
 
   watchFile(resolveConfigPath(), { interval: 700 }, () => { setTimeout(() => tick().catch(() => {}), 300); });
   await tick();
