@@ -1,6 +1,6 @@
 {
   "name": "zcode-theme-studio",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Deep UI personalization for ZCode: theme presets, live token overrides, palette extraction, playlist rotation and Wallpaper Engine / arbitrary local wallpapers (video/web/image) injected via local CDP. Launch ZCode with --remote-debugging-port to enable.",
   "description_i18n": {
     "en": "Deep UI personalization for ZCode: theme presets, live token overrides, wallpaper palette extraction, playlist rotation and Wallpaper Engine / arbitrary local wallpapers (video/web/image/scene live-rendered) injected over local CDP. Requires ZCode launched with --remote-debugging-port (use shortcut_install once).",
