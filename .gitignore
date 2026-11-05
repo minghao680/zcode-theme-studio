@@ -13,3 +13,4 @@ bridge.js
 config-snapshot.json
 config.json
 *.optin
+.dev/
