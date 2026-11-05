@@ -7,7 +7,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, statS
 import { homedir } from 'node:os';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { scanWallpapers, findById } from './lib/scanner.mjs';
+import { scanWallpapers, findById, wallpaperRef } from './lib/scanner.mjs';
 import { listPresets, getPreset } from './lib/themes.mjs';
 import { paletteFromFile } from './lib/palette.mjs';
 import { syncBridge, isAsarPatched, asarPath } from './lib/sync.mjs';
@@ -257,8 +257,17 @@ const TOOLS = [
           }
           const media = hit.playable ? hit.mediaPath : hit.previewPath;
           if (!media) throw new Error('Wallpaper "' + hit.title + '" has no usable media or preview.');
-          const fallbackFit = hit.playable ? 'cover' : 'contain'; // scene previews are square — contain shows the full composition
-          applyWallpaper(cfg, { id: hit.id, type: hit.playable ? hit.type : 'image', mediaUrl: toFileUrl(media), previewUrl: hit.previewPath ? toFileUrl(hit.previewPath) : null, fit: args.fit ?? (hit.previewFallback ? 'contain' : (cfg.wallpaper?.fit ?? 'cover')), dim: args.dim ?? cfg.wallpaper?.dim ?? 25, blur: args.blur ?? cfg.wallpaper?.blur ?? 0 });
+          const ref = wallpaperRef(hit);
+          if (!ref) throw new Error('Wallpaper "' + hit.title + '" has no usable media.');
+          applyWallpaper(cfg, {
+            id: ref.id, type: ref.type,
+            mediaUrl: toFileUrl(ref.mediaUrl),
+            previewUrl: ref.previewUrl ? toFileUrl(ref.previewUrl) : null,
+            sceneSrc: ref.sceneSrc, mediaBase: ref.mediaBase, rendererUrl: ref.rendererUrl,
+            fit: args.fit ?? ref.fit,
+            dim: args.dim ?? cfg.wallpaper?.dim ?? 25,
+            blur: args.blur ?? cfg.wallpaper?.blur ?? 0,
+          });
         }
       } else {
         const wpUpdate = {};
