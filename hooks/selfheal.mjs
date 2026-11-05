@@ -27,7 +27,9 @@ if (!existsSync(optin)) {
 }
 
 // opted in and patch lost (ZCode update): re-apply
-const bridgePath = join(dataDir, 'bridge.js');
+// Canonical bridge location — the asar loader must never point at plugin-data
+// (that path is install-id specific and changes on updates).
+const bridgePath = join(homedir(), '.zcode', 'zcode-theme-studio', 'bridge.js');
 const bridgeUrl = fileUrl(bridgePath);
 const r = await new Promise(res => {
   const c = spawn('powershell.exe', [

@@ -39,15 +39,16 @@ $rootUrl = "file:///$root"
 $tmpJs2 = Join-Path $env:TEMP 'zt-asar-patch-run.mjs'
 @"
 import { readAsarFile, patchAsarWithBackup } from '$rootUrl/lib/asar.mjs';
-import { isPatched, injectLoaderTag, writeBridge } from '$rootUrl/lib/bridge.mjs';
+import { isPatched, injectLoaderTag, writeBridge, countLoaderTags } from '$rootUrl/lib/bridge.mjs';
 const [asar, entry, bridgeUrl, bridgePath, configPath] = process.argv.slice(2);
 const { readFileSync } = await import('node:fs');
 const cfg = JSON.parse(readFileSync(configPath, 'utf8'));
 const html = readAsarFile(asar, entry).toString('utf8');
-// Already patched AND the loader URL is valid -> just refresh the bridge.
-// A stale loader (e.g. the old file%3A encoding bug) must be rewritten in place.
+// Already patched requires: marker present, EXACTLY ONE loader tag, and that tag
+// pointing at the canonical bridge URL. A leftover malformed duplicate (the old
+// file%3A bug) counts as needing repair even though the marker is present.
 const cur = html.match(/<script src="([^"]+bridge\.js)"/);
-const urlOk = cur && cur[1] === bridgeUrl;
+const urlOk = countLoaderTags(html) === 1 && cur && cur[1] === bridgeUrl;
 if (isPatched(html) && urlOk) { writeBridge(bridgePath, cfg); console.log(JSON.stringify({ alreadyPatched: true, bridge: bridgePath })); process.exit(0); }
 const patched = injectLoaderTag(html, bridgeUrl);
 const r = patchAsarWithBackup(asar, entry, Buffer.from(patched, 'utf8'));
@@ -59,7 +60,15 @@ writeBridge(bridgePath, cfg);
 console.log(JSON.stringify({ backup: r.backupPath, htmlSize: patched.length, bridge: bridgePath, loaderUrl: bridgeUrl, repaired: !!cur }));
 "@ | Set-Content -Path $tmpJs2 -Encoding ASCII
 
-$configPath = Join-Path $env:USERPROFILE '.zcode\zcode-theme-studio.config.json'
+# Config source: the canonical plugin-data config wins; the legacy mirror in
+# ~/.zcode is only a fallback (it can be days stale and would bake an old
+# wallpaper into the freshly written bridge).
+$cfgCanon = Get-ChildItem "$env:USERPROFILE\.zcode\cli\plugins\data" -Filter 'zcode-theme-studio@*' -Directory -ErrorAction SilentlyContinue |
+  ForEach-Object { Join-Path $_.FullName 'config.json' } | Where-Object { Test-Path $_ } |
+  Sort-Object { (Get-Item $_).LastWriteTime } -Descending | Select-Object -First 1
+$configPath = if ($cfgCanon) { $cfgCanon } else { Join-Path $env:USERPROFILE '.zcode\zcode-theme-studio.config.json' }
+# Record opt-in so the SessionStart self-heal may silently re-patch later.
+try { New-Item -ItemType Directory -Force -Path (Join-Path $env:USERPROFILE '.zcode\zcode-theme-studio') | Out-Null; Set-Content -Path (Join-Path $env:USERPROFILE '.zcode\zcode-theme-studio\asar-patch.optin') -Value (Get-Date).ToUniversalTime().ToString('o') } catch {}
 $out = & $node $tmpJs2 $Asar 'out/renderer/index.html' $BridgeUrl $BridgePath $configPath 2>&1
 $nodeExit = $LASTEXITCODE
 Remove-Item $tmpJs2 -ErrorAction SilentlyContinue

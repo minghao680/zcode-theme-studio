@@ -9,12 +9,16 @@
 // runs a watchdog that rebinds if the port is ever lost.
 import * as net from 'node:net';
 import { startUiEndpoint, UI_PORT } from './lib/uiendpoint.mjs';
-import { appendFileSync, existsSync, renameSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+const pluginRoot = join(dirname(fileURLToPath(import.meta.url)));
 
-const VERSION = '1.6.0';
+let VERSION = '0.0.0';
+try { VERSION = JSON.parse(readFileSync(join(pluginRoot, '.zcode-plugin', 'plugin.json'), 'utf8')).version || VERSION; } catch {}
 const LOG = join(homedir(), '.zcode', 'zcode-theme-studio.ui.log');
 function log(m) { try { appendFileSync(LOG, '[' + new Date().toISOString() + '] ' + m + '\n'); } catch {} }
 

@@ -65,7 +65,8 @@ function resolveWallpaper(id, base) {
 // ---------- rotation state (in-memory) ----------
 let rotState = null; // { idx, lastAt }
 
-const VERSION = '1.5.2';
+let VERSION = '0.0.0';
+try { VERSION = JSON.parse(readFileSync(join(here, '.zcode-plugin', 'plugin.json'), 'utf8')).version || VERSION; } catch {}
 const TICK_MS = 3000;
 const conns = new Map(); // targetId -> { conn }
 let lastSrc = '';
