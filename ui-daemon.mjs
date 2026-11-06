@@ -46,6 +46,21 @@ function probePort() {
 }
 
 async function main() {
+  // If a healthy daemon is already serving this port, LEAVE IT ALONE. Killing it
+  // and rebinding created a service gap every time a session started (and each
+  // time the watcher re-spawned us); during that gap panel clicks and the restart
+  // button just failed because the request hit a closed port.
+  // Take over only when the port is dead, or the running daemon is a different
+  // version than this copy.
+  const metaPath = join(homedir(), '.zcode', 'zcode-theme-studio', 'uidaemon.json');
+  let running = null;
+  try { running = JSON.parse(readFileSync(metaPath, 'utf8')); } catch {}
+  const alive = !!(running && running.pid && (() => { try { process.kill(running.pid, 0); return true; } catch { return false; } })());
+  if (alive && running.version === VERSION && await probePort()) {
+    log('daemon v' + VERSION + ' already serving on ' + UI_PORT + ' (pid ' + running.pid + '), standing down');
+    process.exit(0);
+  }
+
   const killCode = await killOthers();
   log('kill-others exit=' + killCode);
 
