@@ -10,7 +10,7 @@
 // Usage:
 //   node watch.mjs            # run in foreground (dev)
 //   node watch.mjs --hook     # spawn a detached watcher if none is running, then exit
-import { readFileSync, watchFile, appendFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, watchFile, appendFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import * as net from 'node:net';
@@ -25,6 +25,20 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 function resolveConfigPath() {
   if (process.env.ZCODE_PLUGIN_DATA) return join(process.env.ZCODE_PLUGIN_DATA, 'config.json');
+  // No env var (detached spawn): find the canonical plugin-data config instead of
+  // the legacy mirror at ~/.zcode/*.config.json. That mirror is written once by
+  // server.mjs and goes STALE — an old wallpaper id in it silently overrode the
+  // user's real config and re-wrote the bridge snapshot with the wrong wallpaper.
+  try {
+    const base = join(homedir(), '.zcode', 'cli', 'plugins', 'data');
+    const dirs = readdirSync(base).filter(d => d.startsWith('zcode-theme-studio@'));
+    let best = null, bestAt = 0;
+    for (const d of dirs) {
+      const p = join(base, d, 'config.json');
+      try { const st = statSync(p); if (st.mtimeMs > bestAt) { bestAt = st.mtimeMs; best = p; } } catch {}
+    }
+    if (best) return best;
+  } catch {}
   return join(homedir(), '.zcode', 'zcode-theme-studio.config.json');
 }
 
