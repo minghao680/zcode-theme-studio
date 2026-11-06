@@ -83,7 +83,19 @@ try {
   # ---- verify ----
   Write-Host ''
   Write-Host '[校验] 检查补丁标记...'
-  $verify = & node -e "import(($Plugin.replace(/\/g,'/') + '/lib/asar.mjs')).then(m=>{const h=m.readAsarFile(process.argv[1],'out/renderer/index.html').toString('utf8');console.log(h.includes('zcode-theme-studio patched')?'PATCH-FOUND':'PATCH-MISSING')})" $Asar 2>&1
+  # Run the check from a temp .mjs file: inline -e code with a $Plugin expansion
+  # breaks on quotes/backslashes (bare `G:\...` is a JS syntax error).
+  $rootUrl = $Plugin.replace('\', '/')
+  $tmpVerify = Join-Path $env:TEMP 'zt-wizard-verify.mjs'
+  @"
+import { readAsarFile } from 'file:///$rootUrl/lib/asar.mjs';
+const h = readAsarFile(process.argv[1], 'out/renderer/index.html').toString('utf8');
+console.log(h.includes('zcode-theme-studio patched') ? 'PATCH-FOUND' : 'PATCH-MISSING');
+const tags = h.match(/<script src="[^"]*bridge\.js"/g) || [];
+console.log('loader-tags=' + tags.length);
+"@ | Set-Content -Path $tmpVerify -Encoding UTF8
+  $verify = & node $tmpVerify $Asar 2>&1
+  Remove-Item $tmpVerify -ErrorAction SilentlyContinue
   Log "verify: $verify"
   Write-Host "      $verify"
   $backups = Get-ChildItem (Split-Path $Asar) -Filter 'app.asar.zt-backup-*' -ErrorAction SilentlyContinue
