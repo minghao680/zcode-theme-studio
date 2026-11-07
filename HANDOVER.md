@@ -2,7 +2,7 @@
 
 > 面向接手开发的 agent / 开发者。读完这份文档，你应该能：理解架构、知道改哪里、知道怎么验证、知道哪些坑已经踩过。
 >
-> 最后更新：2026-11-06（v1.13.5）
+> 最后更新：2026-11-07（v1.13.8）
 
 ---
 
@@ -13,7 +13,7 @@
 - 源码：`G:\VSCode-idea\plugins\zcode-theme-studio`
 - 远程：`https://github.com/minghao680/zcode-theme-studio`（分支 `master`）
 - 本地测试市场：`G:\VSCode-idea\plugins\marketplace.json`（指向 `./zcode-theme-studio`）
-- 当前版本：**1.13.5**，MIT
+- 当前版本：**1.13.8**，MIT
 
 ---
 
@@ -41,7 +41,7 @@
 %USERPROFILE%\.zcode\cli\plugins\cache\dev-vscode-idea-plugins\zcode-theme-studio\1.6.0\
 ```
 
-⚠️ 目录名 `1.6.0` 是历史遗留（首次安装时的版本），**里面 `.zcode-plugin/plugin.json` 的 version 已随每次发版同步更新为 1.13.5**。版本判断读的是文件内容，不是目录名，所以不要"纠正"目录名，否则会打断现有安装。
+⚠️ 目录名 `1.6.0` 是历史遗留（首次安装时的版本），**里面 `.zcode-plugin/plugin.json` 的 version 已随每次发版同步更新为 1.13.8**。版本判断读的是文件内容，不是目录名，所以不要"纠正"目录名，否则会打断现有安装。
 
 **改完源码必须做的事**（否则你的改动完全不生效）：
 
@@ -322,32 +322,46 @@ curl -s -X POST http://127.0.0.1:9337/zt/apply -H "Content-Type: application/jso
 
 ## 8. 已知问题（按优先级）
 
-### P0 — 二级菜单打不开（**当前最新 bug，根因已定位**）
+### ✅ 已修（v1.13.8）— 二级菜单打不开
 
 现象：右键菜单/账户菜单里**前几项（界面语言/界面主题/界面模式/界面缩放）点开后没有二级菜单**，后面没有子菜单的项正常。
 
-根因：`lib/themes.mjs` 的菜单规则里，清空后代的规则是
+这个 bug 有**两层**原因，只修第一层不够（v1.13.6 修了一半，用户重启后仍复现）：
 
+**第一层 — 子菜单被清成透明**（v1.13.6 已修）
+清空后代的规则命中了嵌套的子菜单：
 ```css
-[role='menu'] *:not([role='separator']),
-[role='listbox'] *:not([role='separator']),
-[role='dialog'] *:not([role='separator']),
-[data-radix-popper-content-wrapper] > * *:not([role='separator']) { background: transparent !important; }
+[role='menu'] *:not([role='separator']), … { background: transparent !important; }
 ```
+子菜单自己也是 `[role='menu']` 且是父菜单后代 → 被刷成透明。
+修法：每个逗号段追加 `:not([role='menu']):not([role='listbox']):not([role='dialog'])`。
 
-**二级菜单本身也是 `[role='menu']`，且是父菜单的后代**，于是被这条规则把背景清成透明 → 看起来"没打开"（其实 DOM 里已经出现，只是完全透明）。
+**第二层 — `backdrop-filter` 破坏 fixed 定位**（v1.13.8 才修好，这才是"弹不出来"的主因）
+- Radix 的 `MenuSubContent` **不走 `MenuPortal`**（CLI 已从 ZCode 渲染包 `out/renderer/assets/styles-*.js` 证实），渲染在父菜单 DOM 内部
+- 它用 `strategy='fixed'` 定位
+- CSS 规范：祖先带 `backdrop-filter` / `filter` / `transform` → **成为 `position:fixed` 后代的 containing block**
+- 而主题规则给 `[role='menu']` 挂了 `backdrop-filter: blur(20px) saturate(1.25)`
 
-修复方向（未实现）：
+所以子菜单不再相对视口定位，改为相对父菜单偏移。headless Chrome 实测（1200×800）：
 
-```css
-/* 清空后代，但嵌套的菜单/列表根节点要保留自己的填充 */
-[role='menu'] *:not([role='separator']):not([role='menu']):not([role='listbox']):not([role='dialog']),
-[role='listbox'] *:not([role='separator']):not([role='menu']):not([role='listbox']):not([role='dialog']),
-[role='dialog'] *:not([role='separator']):not([role='menu']):not([role='listbox']):not([role='dialog']),
-[data-radix-popper-content-wrapper] > * *:not([role='separator']):not([role='menu']):not([role='listbox']) { … }
-```
+| 条件 | 子菜单 left, top |
+| --- | --- |
+| 无主题 | 280, 60 |
+| 旧规则 | **321, 101**（偏移 +41/+41） |
+| 新规则 | 280, 60 |
 
-修完务必用「菜单里含子菜单」的场景验证：子菜单可见、有底色、`[role=separator]` 仍可见。
+偏移量 = 父菜单自身的定位偏移。账户菜单在窗口右下角，父菜单离视口原点越远偏移越大 → 子菜单被推出可见区或被父菜单边界裁掉 → **表现为"点了没反应"**。
+
+**最终修法：菜单容器不挂 `backdrop-filter`，只保留不透明填充。** 模糊本来就没有视觉收益——它只采样菜单下面那层，而底色已完全覆盖。
+
+⚠️ **不要给任何 `[role='menu'|'listbox'|'dialog']` 加 `backdrop-filter` / `filter` / `transform`**，会再次触发这个问题。`tests/menu-no-backdrop-filter.mjs` 会挡住这种改动。
+
+**验证**（均入库 `tests/`）：
+- `submenu-containing-block.mjs` — 载入真实主题 CSS，断言子菜单位置不变、未被裁剪、仍有底色
+- `submenu-containing-block-control.mjs` — **反向对照**：注入旧规则，断言子菜单确实位移（若此对照不 PASS，说明正测试无鉴别力）
+- `menu-no-backdrop-filter.mjs` — frosted/solid/clear 三态均断言菜单选择器无 blur
+
+**附带发现**：`data-radix-popper-content-wrapper` 在当前 ZCode 版本（3.17.2）的渲染包里出现 **0 次**，该选择器早已失效（不影响 `[role=menu]` 主规则）。知道就行，别指望它。
 
 ### P0 — 侧栏材质/侧栏定位整体失效（`sidebarNodes=0`）
 
@@ -362,14 +376,14 @@ glass-groups      detail: "sidebarNodes=0 glass=true filter="blur(40px)" native=
 
 需要做的事：**先把 ZCode 侧栏的真实 DOM 结构测出来**。建议在 `styleFloatingPanels`/`applyShell` 里加一次性 dump：遍历 `body *`，输出 `tagName#id.className [left,top,w,h]`（只输出 `left < vw*0.25 && height > vh*0.5` 的节点）到 `/zt/scene-report`，让用户重启一次即可拿到结构，再更新 `selectors.json`。
 
-### P1 — 重载按钮点击无响应
+### P1 — 重载按钮：点击已实测可用，仅日志证据偏少
 
-按钮能显示（v1.13.0 的定位是正常的），但点击后页面没有 reload、日志也没有任何新上报。未验证的假设：
+v1.13.0 起的重载按钮（`location.reload()`）定位正常，`.dev/test-reload-btn.mjs` 三场景全 PASS（含"点击触发 reload"）。
+诊断日志里只有 3 条 `reload-btn` 记录（`matched=true left=1500`、`matched=false left=1604/1611`），**不足以证明用户侧点击一定生效**，但也没有反证。
 
-1. 按钮被 ZCode 自己的标题栏层压住（点击命中上层）→ 可给按钮加 `pointerdown` 监听并立即 `report('reload-btn-click')` 验证
-2. `location.reload()` 在 `file://` + asar 环境下被拦（可能性低）
+若再报"点了没反应"：先加 `pointerdown` 上报确认 handler 是否触发（而不是只报定位结果）；未触发再考虑 `z-index` 提到 `2147483647` 与 `pointer-events` 自测。
 
-排查建议：先加点击诊断上报，确认 handler 是否被触发；若未触发，把 `z-index` 提到 `2147483647` 并用 `pointer-events` 自测。
+⚠️ 另注：后台窗口会被 Chromium 节流 3s 轮询刷新器，**改完配置不聚焦窗口可能迟迟不生效**——这不是 bug，别误判成注入失败。
 
 ### P1 — 菜单尺寸判据与浮层扫描的遗留风险
 
@@ -400,8 +414,10 @@ README 仍写着"场景型默认 contain"、"scene 回退预览"，但现在的�
 6. **`''.indexOf('zt-') === 0` 为 true**：空 id 元素会被误判为"自家 UI"。必须 `id.length > 0 &&`。
 7. **逗号选择器拆分陷阱**：`[role=menu], [role=listbox] *` 按逗号拆开后，前两段匹配**容器自身**。后代组合器必须在每个逗号段重复。
 8. **全屏 `backdrop-filter` 是性能杀手**：盖在动画 canvas 上会让 Chromium 每帧重采样整屏。`.zt-veil` 已移除它，**不要加回来**。
+8.5. **`backdrop-filter` / `filter` / `transform` 会创建 containing block**：给任何容器挂上它，其内部 `position:fixed` 后代就不再相对视口定位。Radix 菜单用 `strategy='fixed'`，而 `MenuSubContent` 不走 portal、渲染在父菜单内部 → **给父菜单加模糊 = 子菜单错位/被裁**。这就是"二级菜单弹不出来"的真凶（见 §8）。给"整块 UI"上滤镜前，先问它里面有没有 fixed 定位的东西。
 9. **玻璃节点的背景只能来自 `--color-sidebar`**：给它加 `background-color !important` 会彻底压死不透明度滑杆。
 10. **`fit` 只改 backing 尺寸不改布局**：scene 的 `renderDpr` 变化时保持 `fit: cover` 才能"变软但仍铺满"。
+10.5. **"看不见"和"没打开"要分开验证**：本 bug 有两层（透明 + 错位），只修透明会让症状从"完全不可见"变成"看起来没反应"。诊断浮层问题时，先量 `getBoundingClientRect()` 判断它到底在不在正确位置，再谈颜色/透明度。**能用 headless Chrome 复现就别靠推理**——这次 5 分钟就量出了 +41/+41 的偏移。
 
 ### 9.3 状态与生命周期
 
@@ -432,11 +448,11 @@ README 仍写着"场景型默认 contain"、"scene 回退预览"，但现在的�
 
 ## 10. 下一步建议（按价值排序）
 
-1. **修二级菜单**（P0，一行 CSS 的事，见 §8）
-2. **测出侧栏真实 DOM 并更新 `selectors.json`**（P0，恢复侧栏玻璃/材质一整套能力）
-3. 重载按钮的点击诊断（P1）——加 `pointerdown` 上报，确认 handler 是否触发
-4. 清理遗留配置字段 + 重写 README（P2）
-5. 把 `.dev/test-*.mjs` 里的验证脚本迁进仓库 `tests/`（目前不入库，换个 agent 就丢了）
+1. ~~修二级菜单~~ **已于 v1.13.8 修复并验证**（见 §8，含两层根因）
+2. ~~把 `.dev/test-*.mjs` 迁进 `tests/`~~ **已入库 7 个**（见 §11.1）；剩余 `.dev/` 脚本可按需迁移
+3. **侧栏定位不稳定**（P0，最高优先）：冷启动常 `sidebarNodes=0`，热态又变 3。三层选择器 + 几何兜底的历史命中率是 0（`sidebar-geo-found` 从未出现）。建议：① 加一次性 DOM dump 拿到真实结构后修 `selectors.json`；② 给 `applyShell` 加"选择器未命中时延迟重试"，而不是当下就报 miss
+4. 重写 README + 清理遗留配置字段（`flatSurfaces` / `sidebarGlass` / `unifySidebar` 已被 `material` 接管，见 P2）
+5. 删除或重写已失效的 `.dev/test-menus.mjs`、`test-sidebar-glass.mjs`
 6. scene 画质的"自动"档可以考虑按 `frames-sample` 自适应降 `renderDpr`（现在只降 fps）
 
 ---
@@ -467,8 +483,23 @@ README 仍写着"场景型默认 contain"、"scene 回退预览"，但现在的�
 - [ ] `curl -X POST 127.0.0.1:9337/zt/apply -d '{"patches":[]}'` 返回 200
 - [ ] 确认只有 1 个 daemon、1 个 watcher
 - [ ] 确认 cache 目录里 `.zcode-plugin/plugin.json` 版本 == 源码版本
+- [ ] 跑 `node tests/*.mjs`，**7 个全 PASS**（v1.13.8 起已入库，不再依赖 `.dev/`）
 - [ ] 跑 `.dev/bridge-vm2.mjs`，应输出 `OK: bridge ran clean in VM`
-- [ ] 跑 `.dev/test-floating.mjs` / `test-menus.mjs`，应全 PASS
+- [ ] 需要 Chromium 的两个测试（`submenu-containing-block*.mjs`）在没装 Chrome/Edge 时会 SKIP，不算失败
+
+### 11.1 `tests/` 目录（v1.13.8 起，已入库）
+
+| 文件 | 守护什么 |
+| --- | --- |
+| `submenu-nesting.mjs` | 嵌套子菜单不被"清空后代"规则刷透明；分隔线仍例外 |
+| `submenu-containing-block.mjs` | 真实主题 CSS 不干扰子菜单的 fixed 锚定（需 Chromium） |
+| `submenu-containing-block-control.mjs` | **反向对照**：旧规则确实会位移子菜单（防正测试失去鉴别力，需 Chromium） |
+| `menu-no-backdrop-filter.mjs` | frosted/solid/clear 三态，菜单选择器一律无 blur |
+| `sidebar-dedupe.mjs` | 侧栏只画最外层节点，不叠多重模糊 |
+| `pwsh-e2e.mjs` | 进程查询命令真的跑在 PowerShell 7 上 |
+| `pwsh-fallback.mjs` | 没有 pwsh 7 时正确回退 5.1 |
+
+⚠️ `.dev/test-menus.mjs` 与 `test-sidebar-glass.mjs` **已失效**（断言的是 v1.13.4 / v1.11.0 的旧实现），会假失败，别被误导。待重写或删除。
 
 ---
 
