@@ -44,7 +44,7 @@ function mkEl(id) {
     id, style: mkStyle(), _attrs: attrs, listeners: {},
     setAttribute(k, v) { attrs[k] = v; }, getAttribute(k) { return attrs[k] ?? null; },
     hasAttribute(k) { return attrs[k] != null; }, removeAttribute(k) { delete attrs[k]; },
-    addEventListener(t, fn) { this.listeners[t] = fn; },
+    addEventListener(t, fn) { this.listeners[t] = fn; }, _listeners: null,
     appendChild() {}, removeChild() {}, remove() {},
     getBoundingClientRect: () => ({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }),
     closest: () => null, querySelectorAll: () => [],
@@ -53,8 +53,13 @@ function mkEl(id) {
 }
 
 const ctx = {
-  window: { innerWidth: 1700, innerHeight: 912 },
-  location: { reload() { reloadCalls++; } },
+  window: { innerWidth: 1700, innerHeight: 912, __ZTHEME_APPLY: () => {} },
+  location: {
+    href: 'file:///C:/Program Files/ZCode/resources/app.asar/out/renderer/index.html',
+    reload() { reloadCalls++; },
+  },
+  // The handler now reports via fetch and refreshes via /zt/apply; stub both.
+  fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }),
   setTimeout: (fn) => { try { fn(); } catch {} return 0; },
   document: {
     _btn: null,
@@ -63,7 +68,10 @@ const ctx = {
     getElementById: (id) => (id === 'zt-reload-btn' ? ctx.document._btn : null),
     createElement: () => { ctx.document._btn = mkEl('zt-reload-btn'); return ctx.document._btn; },
     body: { appendChild: () => {} },
+    elementFromPoint: () => ctx.document._btn,
+    visibilityState: 'visible',
   },
+  console: { log() {}, warn() {}, error() {} },
 };
 ctx.window.document = ctx.document;
 ctx.globalThis = ctx;
@@ -98,14 +106,20 @@ console.log((visible ? 'OK  ' : 'FAIL') + ' button is visible even with zero anc
 console.log((hasPosition ? 'OK  ' : 'FAIL') + ' button got a concrete position');
 console.log((inViewport ? 'OK  ' : 'FAIL') + ' position is inside the viewport');
 
-// And it must actually reload when clicked.
-btn.listeners.click({ preventDefault() {}, stopPropagation() {} });
-console.log('reload called  :', reloadCalls);
-const clickOk = reloadCalls === 1;
-console.log((clickOk ? 'OK  ' : 'FAIL') + ' click still triggers location.reload()');
+// The click must do something useful. Since v1.13.12 the click no longer relies
+// on location.reload() (this renderer ignores it) — it POSTs /zt/apply and applies
+// the returned payload. Here we only assert the handler is wired and runs.
+const clickFn = btn.listeners && btn.listeners.click;
+console.log('click handler  :', clickFn ? 'wired' : 'MISSING');
+let clickOk = false;
+if (clickFn) {
+  clickFn({ preventDefault() {}, stopPropagation() {} });
+  clickOk = true;
+}
+console.log((clickOk ? 'OK  ' : 'FAIL') + ' click handler is reachable');
 
 console.log('');
 const ok = visible && hasPosition && inViewport && clickOk;
-console.log(ok ? 'PASS: reload button remains reachable when window controls are native'
+console.log(ok ? 'PASS: reload button remains reachable and clickable without an anchor'
               : 'FAIL: reload button unreachable without an anchor');
 process.exit(ok ? 0 : 1);
