@@ -7,6 +7,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { powershellPath } from '../lib/pwsh.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -105,7 +106,7 @@ function selfHeal() {
       try { bridgeUrl = (await import('../lib/bridge.mjs')).fileUrl(bridgePath); } catch {}
       if (!bridgeUrl) { log('cannot build bridge url'); return; }
       await new Promise(res => {
-        const c = spawn('powershell.exe', [
+        const c = spawn(powershellPath(), [
           '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(pluginRoot, 'assets', 'asar-patch.ps1'),
           '-Asar', asar, '-PluginRoot', pluginRoot, '-BridgeUrl', bridgeUrl, '-BridgePath', bridgePath,
         ], { timeout: 180000, windowsHide: true });

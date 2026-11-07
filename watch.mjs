@@ -13,6 +13,7 @@
 import { readFileSync, readdirSync, statSync, watchFile, appendFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { powershellPath } from './lib/pwsh.mjs';
 import * as net from 'node:net';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -183,7 +184,7 @@ async function main() {
   // so they would hold the lock forever and the current version could never start).
   if (!hookMode || true) {
     try {
-      const c = spawn('powershell.exe', ['-NoProfile', '-Command',
+      const c = spawn(powershellPath(), ['-NoProfile', '-Command',
         `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*watch.mjs*' -and $_.ProcessId -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`], { timeout: 20000 });
       await new Promise(r => { c.on('close', r); c.on('error', r); setTimeout(r, 15000); });
     } catch {}

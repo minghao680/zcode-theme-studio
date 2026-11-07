@@ -11,6 +11,7 @@ import * as net from 'node:net';
 import { startUiEndpoint, UI_PORT } from './lib/uiendpoint.mjs';
 import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { powershellPath } from './lib/pwsh.mjs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +26,7 @@ function log(m) { try { appendFileSync(LOG, '[' + new Date().toISOString() + '] 
 function killOthers() {
   return new Promise(res => {
     try {
-      const c = spawn('powershell.exe', ['-NoProfile', '-Command',
+      const c = spawn(powershellPath(), ['-NoProfile', '-Command',
         `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*ui-daemon*' -and $_.ProcessId -ne ${process.pid} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`], { timeout: 20000, windowsHide: true });
       c.on('close', code => res(code));
       c.on('error', () => res(-1));

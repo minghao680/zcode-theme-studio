@@ -5,6 +5,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, statSync, appendFileSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { powershellPath } from './lib/pwsh.mjs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scanWallpapers, findById, wallpaperRef } from './lib/scanner.mjs';
@@ -396,7 +397,7 @@ const TOOLS = [
       const port = args.port || cfg.debugPort || 9333;
       const ps1 = join(here, 'assets', 'shortcut-helper.ps1');
       const r = await new Promise(res => {
-        const c = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ps1, '-Port', String(port)], { timeout: 30000 });
+        const c = spawn(powershellPath(), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ps1, '-Port', String(port)], { timeout: 30000 });
         let out = '', err = '';
         c.stdout.on('data', d => { out += d; });
         c.stderr.on('data', d => { err += d; });
@@ -420,7 +421,7 @@ const TOOLS = [
       if (!existsSync(target)) throw new Error('app.asar not found at ' + target + ' - set THEME_STUDIO_ASAR_PATH if ZCode is installed elsewhere.');
       if (args.restore) {
         const r = await new Promise(res => {
-          const c = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(here, 'assets', 'asar-restore.ps1'), '-Asar', target], { timeout: 60000 });
+          const c = spawn(powershellPath(), ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(here, 'assets', 'asar-restore.ps1'), '-Asar', target], { timeout: 60000 });
           let out = '', err = '';
           c.stdout.on('data', d => { out += d; });
           c.stderr.on('data', d => { err += d; });
@@ -441,7 +442,7 @@ const TOOLS = [
       const bridgeUrl = fileUrl(bPath);
       const ps1 = join(here, 'assets', 'asar-patch.ps1');
       const r = await new Promise(res => {
-        const c = spawn('powershell.exe', [
+        const c = spawn(powershellPath(), [
           '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ps1,
           '-Asar', target, '-PluginRoot', here, '-BridgeUrl', bridgeUrl, '-BridgePath', bPath,
         ], { timeout: 180000 });

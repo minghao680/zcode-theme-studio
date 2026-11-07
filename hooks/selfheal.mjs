@@ -6,6 +6,7 @@
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
+import { powershellPath } from '../lib/pwsh.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readAsarFile } from '../lib/asar.mjs';
@@ -32,7 +33,7 @@ if (!existsSync(optin)) {
 const bridgePath = join(homedir(), '.zcode', 'zcode-theme-studio', 'bridge.js');
 const bridgeUrl = fileUrl(bridgePath);
 const r = await new Promise(res => {
-  const c = spawn('powershell.exe', [
+  const c = spawn(powershellPath(), [
     '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(here, '..', 'assets', 'asar-patch.ps1'),
     '-Asar', asar, '-PluginRoot', dirname(here), '-BridgeUrl', bridgeUrl, '-BridgePath', bridgePath,
   ], { timeout: 120000 });
